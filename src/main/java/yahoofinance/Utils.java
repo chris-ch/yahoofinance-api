@@ -326,6 +326,13 @@ public class Utils {
         return buffer.toString();
     }
 
+    /**
+     * Serializes an object to a path.
+     *
+     * @param path
+     * @param persisted
+     * @throws IOException
+     */
     public static void storeObject(Path path, Object persisted) throws IOException {
         try (OutputStream fos = Files.newOutputStream(path, StandardOpenOption.CREATE);
              ObjectOutputStream oos = new ObjectOutputStream(fos);
@@ -334,6 +341,15 @@ public class Utils {
         }
     }
 
+    /**
+     * Un-serializes an object from a path.
+     *
+     * @param path
+     * @param <T>
+     * @return
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
     public static <T> T loadObject(Path path) throws IOException, ClassNotFoundException {
         T object;
         try (InputStream fis = Files.newInputStream(path, StandardOpenOption.CREATE);
