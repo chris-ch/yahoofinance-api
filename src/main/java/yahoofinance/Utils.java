@@ -1,8 +1,11 @@
 package yahoofinance;
 
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -323,4 +326,21 @@ public class Utils {
         return buffer.toString();
     }
 
+    public static void storeObject(Path path, Object persisted) throws IOException {
+        try (OutputStream fos = Files.newOutputStream(path, StandardOpenOption.CREATE);
+             ObjectOutputStream oos = new ObjectOutputStream(fos);
+        ){
+            oos.writeObject(persisted);
+        }
+    }
+
+    public static <T> T loadObject(Path path) throws IOException, ClassNotFoundException {
+        T object;
+        try (InputStream fis = Files.newInputStream(path, StandardOpenOption.CREATE);
+             ObjectInputStream ois = new ObjectInputStream(fis);
+        ){
+            object = (T)ois.readObject();
+        }
+        return object;
+    }
 }
