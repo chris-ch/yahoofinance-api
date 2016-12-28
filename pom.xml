@@ -31,13 +31,13 @@
         </developer>
     </developers>
     <issueManagement>
-        <url>https://github.com/sstrickx/yahoofinance-api/issues</url>
+        <url>https://github.com/chris-ch/yahoofinance-api/issues</url>
         <system>GitHub Issues</system>
     </issueManagement>
     <scm>
-        <connection>scm:git:git://github.com/sstrickx/yahoofinance-api.git</connection>
-        <developerConnection>scm:git:git@github.com:sstrickx/yahoofinance-api.git</developerConnection>
-        <url>https://github.com/sstrickx/yahoofinance-api</url>
+        <connection>scm:git:git://github.com/chris-ch/yahoofinance-api.git</connection>
+        <developerConnection>scm:git:git@github.com:chris-ch/yahoofinance-api.git</developerConnection>
+        <url>https://github.com/chris-ch/yahoofinance-api</url>
     </scm>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -60,7 +60,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.11</version>
+            <version>4.12</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -139,7 +139,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.5</version>
+                        <version>1.6</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -154,7 +154,7 @@
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.6</version>
+                        <version>1.6.7</version>
                         <extensions>true</extensions>
                         <configuration>
                             <serverId>ossrh</serverId>

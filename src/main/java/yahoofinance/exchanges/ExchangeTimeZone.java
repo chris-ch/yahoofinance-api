@@ -1,6 +1,7 @@
 
 package yahoofinance.exchanges;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
@@ -11,7 +12,7 @@ import yahoofinance.YahooFinance;
  *
  * @author Stijn Strickx
  */
-public class ExchangeTimeZone {
+public class ExchangeTimeZone implements Serializable {
     
     
     public static final Map<String, TimeZone> SUFFIX_TIMEZONES = new HashMap<String, TimeZone>();
