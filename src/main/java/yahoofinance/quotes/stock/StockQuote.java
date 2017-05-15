@@ -51,6 +51,9 @@ public class StockQuote implements Serializable {
      * @return      difference between current price and previous close
      */
     public BigDecimal getChange() {
+        if(this.price == null || this.previousClose == null) {
+            return null;
+        }
         return this.price.subtract(this.previousClose);
     }
     
@@ -67,6 +70,9 @@ public class StockQuote implements Serializable {
      * @return      difference between current price and year low
      */
     public BigDecimal getChangeFromYearLow() {
+        if(this.price == null || this.yearLow == null) {
+            return null;
+        }
         return this.price.subtract(this.yearLow);
     }
     
@@ -83,6 +89,9 @@ public class StockQuote implements Serializable {
      * @return      difference between current price and year high
      */
     public BigDecimal getChangeFromYearHigh() {
+        if(this.price == null || this.yearHigh == null) {
+            return null;
+        }
         return this.price.subtract(this.yearHigh);
     }
     
@@ -99,6 +108,9 @@ public class StockQuote implements Serializable {
      * @return      difference between current price and 50 day moving average
      */
     public BigDecimal getChangeFromAvg50() {
+        if(this.price == null || this.priceAvg50 == null) {
+            return null;
+        }
         return this.price.subtract(this.priceAvg50);
     }
     
@@ -115,6 +127,9 @@ public class StockQuote implements Serializable {
      * @return      difference between current price and 200 day moving average
      */
     public BigDecimal getChangeFromAvg200() {
+        if(this.price == null || this.priceAvg200 == null) {
+            return null;
+        }
         return this.price.subtract(this.priceAvg200);
     }
     
