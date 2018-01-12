@@ -5,16 +5,23 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.Calendar;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import yahoofinance.histquotes.HistQuotesRequest;
 import yahoofinance.histquotes.HistoricalQuote;
 import yahoofinance.histquotes.Interval;
+import yahoofinance.histquotes2.HistDividendsRequest;
 import yahoofinance.histquotes2.HistQuotes2Request;
+import yahoofinance.histquotes2.HistSplitsRequest;
+import yahoofinance.histquotes2.HistoricalDividend;
+import yahoofinance.histquotes2.HistoricalSplit;
+import yahoofinance.quotes.query1v7.StockQuotesQuery1V7Request;
 import yahoofinance.quotes.stock.StockDividend;
 import yahoofinance.quotes.stock.StockQuote;
-import yahoofinance.quotes.stock.StockQuotesData;
-import yahoofinance.quotes.stock.StockQuotesRequest;
+import yahoofinance.quotes.csv.StockQuotesData;
+import yahoofinance.quotes.csv.StockQuotesRequest;
 import yahoofinance.quotes.stock.StockStats;
 
 /**
@@ -23,6 +30,8 @@ import yahoofinance.quotes.stock.StockStats;
  */
 public class Stock implements Serializable {
 
+    private static final Logger log = LoggerFactory.getLogger(Stock.class);
+  
     private final String symbol;
     private String name;
     private String currency;
@@ -33,21 +42,39 @@ public class Stock implements Serializable {
     private StockDividend dividend;
     
     private List<HistoricalQuote> history;
+    private List<HistoricalDividend> dividendHistory;
+    private List<HistoricalSplit> splitHistory;
     
     public Stock(String symbol) {
         this.symbol = symbol;
     }
     
     private void update() throws IOException {
-        StockQuotesRequest request = new StockQuotesRequest(this.symbol);
-        StockQuotesData data = request.getSingleResult();
-        if(data != null) {
-            this.setQuote(data.getQuote());
-            this.setStats(data.getStats());
-            this.setDividend(data.getDividend());
-            YahooFinance.logger.log(Level.INFO, "Updated Stock with symbol: {0}", this.symbol);
+        if(YahooFinance.QUOTES_QUERY1V7_ENABLED.equalsIgnoreCase("true")) {
+            StockQuotesQuery1V7Request request = new StockQuotesQuery1V7Request(this.symbol);
+            Stock stock = request.getSingleResult();
+            if (stock != null) {
+                this.setName(stock.getName());
+                this.setCurrency(stock.getCurrency());
+                this.setStockExchange(stock.getStockExchange());
+                this.setQuote(stock.getQuote());
+                this.setStats(stock.getStats());
+                this.setDividend(stock.getDividend());
+                log.info("Updated Stock with symbol: {}", this.symbol);
+            } else {
+                log.error("Failed to update Stock with symbol: {}", this.symbol);
+            }
         } else {
-            YahooFinance.logger.log(Level.SEVERE, "Failed to update Stock with symbol: {0}", this.symbol);
+            StockQuotesRequest request = new StockQuotesRequest(this.symbol);
+            StockQuotesData data = request.getSingleResult();
+            if (data != null) {
+                this.setQuote(data.getQuote());
+                this.setStats(data.getStats());
+                this.setDividend(data.getDividend());
+                log.info("Updated Stock with symbol: {}", this.symbol);
+            } else {
+                log.error("Failed to update Stock with symbol: {}", this.symbol);
+            }
         }
     }
 
@@ -310,6 +337,152 @@ public class Stock implements Serializable {
         this.history = history;
     }
     
+    /**
+     * This method will return historical dividends from this stock.
+     * If the historical dividends are not available yet, they will 
+     * be requested first from Yahoo Finance.
+     * <p>
+     * If the historical dividends are not available yet, the
+     * following characteristics will be used for the request:
+     * <ul>
+     * <li> from: 1 year ago (default)
+     * <li> to: today (default)
+     * </ul>
+     * <p>
+     * There are several more methods available that allow you
+     * to define some characteristics of the historical data.
+     * Calling one of those methods will result in a new request
+     * being sent to Yahoo Finance.
+     * 
+     * @return      a list of historical dividends from this stock
+     * @throws java.io.IOException when there's a connection problem
+     * @see         #getDividendHistory(java.util.Calendar) 
+     * @see         #getDividendHistory(java.util.Calendar, java.util.Calendar) 
+     */
+    public List<HistoricalDividend> getDividendHistory() throws IOException {
+        if(this.dividendHistory != null) {
+            return this.dividendHistory;
+        }
+        return this.getDividendHistory(HistDividendsRequest.DEFAULT_FROM);
+    }
+    
+    /**
+     * Requests the historical dividends for this stock with the following characteristics.
+     * <ul>
+     * <li> from: specified value
+     * <li> to: today (default)
+     * </ul>
+     * 
+     * @param from          start date of the historical data
+     * @return              a list of historical dividends from this stock
+     * @throws java.io.IOException when there's a connection problem
+     * @see                 #getDividendHistory() 
+     */
+    public List<HistoricalDividend> getDividendHistory(Calendar from) throws IOException {
+        return this.getDividendHistory(from, HistDividendsRequest.DEFAULT_TO);
+    }
+    
+    /**
+     * Requests the historical dividends for this stock with the following characteristics.
+     * <ul>
+     * <li> from: specified value
+     * <li> to: specified value
+     * </ul>
+     * 
+     * @param from          start date of the historical data
+     * @param to            end date of the historical data
+     * @return              a list of historical dividends from this stock
+     * @throws java.io.IOException when there's a connection problem
+     * @see                 #getDividendHistory() 
+     */
+    public List<HistoricalDividend> getDividendHistory(Calendar from, Calendar to) throws IOException {
+        if(YahooFinance.HISTQUOTES2_ENABLED.equalsIgnoreCase("true")) {
+            HistDividendsRequest histDiv = new HistDividendsRequest(this.symbol, from, to);
+            this.setDividendHistory(histDiv.getResult());
+        } else {
+        	// Historical dividends cannot be retrieved without CRUMB
+        	this.setDividendHistory(null);
+        }
+        return this.dividendHistory;
+    }
+    
+    public void setDividendHistory(List<HistoricalDividend> dividendHistory) {
+        this.dividendHistory = dividendHistory;
+    }
+    
+    /**
+     * This method will return historical splits from this stock.
+     * If the historical splits are not available yet, they will 
+     * be requested first from Yahoo Finance.
+     * <p>
+     * If the historical splits are not available yet, the
+     * following characteristics will be used for the request:
+     * <ul>
+     * <li> from: 1 year ago (default)
+     * <li> to: today (default)
+     * </ul>
+     * <p>
+     * There are several more methods available that allow you
+     * to define some characteristics of the historical data.
+     * Calling one of those methods will result in a new request
+     * being sent to Yahoo Finance.
+     * 
+     * @return      a list of historical splits from this stock
+     * @throws java.io.IOException when there's a connection problem
+     * @see         #getSplitHistory(java.util.Calendar) 
+     * @see         #getSplitHistory(java.util.Calendar, java.util.Calendar) 
+     */
+    public List<HistoricalSplit> getSplitHistory() throws IOException {
+        if(this.splitHistory != null) {
+            return this.splitHistory;
+        }
+        return this.getSplitHistory(HistSplitsRequest.DEFAULT_FROM);
+    }
+    
+    /**
+     * Requests the historical splits for this stock with the following characteristics.
+     * <ul>
+     * <li> from: specified value
+     * <li> to: today (default)
+     * </ul>
+     * 
+     * @param from          start date of the historical data
+     * @return              a list of historical splits from this stock
+     * @throws java.io.IOException when there's a connection problem
+     * @see                 #getSplitHistory() 
+     */
+    public List<HistoricalSplit> getSplitHistory(Calendar from) throws IOException {
+        return this.getSplitHistory(from, HistSplitsRequest.DEFAULT_TO);
+    }
+    
+    /**
+     * Requests the historical splits for this stock with the following characteristics.
+     * <ul>
+     * <li> from: specified value
+     * <li> to: specified value
+     * </ul>
+     * 
+     * @param from          start date of the historical data
+     * @param to            end date of the historical data
+     * @return              a list of historical splits from this stock
+     * @throws java.io.IOException when there's a connection problem
+     * @see                 #getSplitHistory() 
+     */
+    public List<HistoricalSplit> getSplitHistory(Calendar from, Calendar to) throws IOException {
+        if(YahooFinance.HISTQUOTES2_ENABLED.equalsIgnoreCase("true")) {
+            HistSplitsRequest histSplit = new HistSplitsRequest(this.symbol, from, to);
+            this.setSplitHistory(histSplit.getResult());
+        } else {
+        	// Historical splits cannot be retrieved without CRUMB
+        	this.setSplitHistory(null);
+        }
+        return this.splitHistory;
+    }
+    
+    public void setSplitHistory(List<HistoricalSplit> splitHistory) {
+        this.splitHistory = splitHistory;
+    }
+    
     public String getSymbol() {
         return symbol;
     }
@@ -365,9 +538,9 @@ public class Stock implements Serializable {
             try {
                 System.out.println(f.getName() + ": " + f.get(this));
             } catch (IllegalArgumentException ex) {
-                Logger.getLogger(Stock.class.getName()).log(Level.SEVERE, null, ex);
+                log.error(null, ex);
             } catch (IllegalAccessException ex) {
-                Logger.getLogger(Stock.class.getName()).log(Level.SEVERE, null, ex);
+                log.error(null, ex);
             }
         }
         System.out.println("--------------------------------");

@@ -2,8 +2,6 @@ package yahoofinance.histquotes2;
 
 import yahoofinance.Utils;
 import yahoofinance.YahooFinance;
-import yahoofinance.histquotes.HistoricalQuote;
-import yahoofinance.histquotes.Interval;
 import yahoofinance.util.RedirectableRequest;
 
 import java.io.BufferedReader;
@@ -19,18 +17,16 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Stijn Strickx
+ * @author Stijn Strickx (modified by Randle McMurphy)
  */
-public class HistQuotes2Request {
+public class HistSplitsRequest {
 
 
-    private static final Logger log = LoggerFactory.getLogger(HistQuotes2Request.class);
+    private static final Logger log = LoggerFactory.getLogger(HistSplitsRequest.class);
     private final String symbol;
 
     private final Calendar from;
     private final Calendar to;
-
-    private final QueryInterval interval;
 
     public static final Calendar DEFAULT_FROM = Calendar.getInstance();
 
@@ -38,51 +34,27 @@ public class HistQuotes2Request {
         DEFAULT_FROM.add(Calendar.YEAR, -1);
     }
     public static final Calendar DEFAULT_TO = Calendar.getInstance();
-    public static final QueryInterval DEFAULT_INTERVAL = QueryInterval.MONTHLY;
 
-    public HistQuotes2Request(String symbol) {
-        this(symbol, DEFAULT_INTERVAL);
+    // Interval has no meaning here and is not used here
+    // But it's better to leave it because Yahoo's standard query URL still contains it
+    public static final QueryInterval DEFAULT_INTERVAL = QueryInterval.DAILY;
+
+    public HistSplitsRequest(String symbol) {
+        this(symbol, DEFAULT_FROM, DEFAULT_TO);
     }
 
-    public HistQuotes2Request(String symbol, QueryInterval interval) {
-        this(symbol, DEFAULT_FROM, DEFAULT_TO, interval);
-    }
-
-
-    public HistQuotes2Request(String symbol, Calendar from, Calendar to) {
-        this(symbol, from, to, DEFAULT_INTERVAL);
-    }
-
-    public HistQuotes2Request(String symbol, Calendar from, Calendar to, QueryInterval interval) {
+    public HistSplitsRequest(String symbol, Calendar from, Calendar to) {
         this.symbol = symbol;
         this.from = this.cleanHistCalendar(from);
         this.to = this.cleanHistCalendar(to);
-        this.interval = interval;
     }
 
-    public HistQuotes2Request(String symbol, Date from, Date to) {
-        this(symbol, from, to, DEFAULT_INTERVAL);
-    }
-
-    public HistQuotes2Request(String symbol, Date from, Date to, QueryInterval interval) {
-        this(symbol, interval);
+    public HistSplitsRequest(String symbol, Date from, Date to) {
+        this(symbol);
         this.from.setTime(from);
         this.to.setTime(to);
         this.cleanHistCalendar(this.from);
         this.cleanHistCalendar(this.to);
-    }
-
-    // Constructors to support the old Interval
-    public HistQuotes2Request(String symbol, Interval interval) {
-        this(symbol, DEFAULT_FROM, DEFAULT_TO, interval);
-    }
-
-    public HistQuotes2Request(String symbol, Calendar from, Calendar to, Interval interval) {
-        this(symbol, from, to, IntervalMapper.get(interval));
-    }
-
-    public HistQuotes2Request(String symbol, Date from, Date to, Interval interval) {
-        this(symbol, from, to, IntervalMapper.get(interval));
     }
 
     /**
@@ -97,12 +69,12 @@ public class HistQuotes2Request {
         return cal;
     }
 
-    public List<HistoricalQuote> getResult() throws IOException {
+    public List<HistoricalSplit> getResult() throws IOException {
 
-        List<HistoricalQuote> result = new ArrayList<HistoricalQuote>();
+        List<HistoricalSplit> result = new ArrayList<HistoricalSplit>();
         
         if(this.from.after(this.to)) {
-            log.warn("Unable to retrieve historical quotes. "
+            log.warn("Unable to retrieve historical splits. "
                     + "From-date should not be after to-date. From: "
                     + this.from.getTime() + ", to: " + this.to.getTime());
             return result;
@@ -112,7 +84,12 @@ public class HistQuotes2Request {
         params.put("period1", String.valueOf(this.from.getTimeInMillis() / 1000));
         params.put("period2", String.valueOf(this.to.getTimeInMillis() / 1000));
 
-        params.put("interval", this.interval.getTag());
+        // Interval has no meaning here and is not used here
+        // But it's better to leave it because Yahoo's standard query URL still contains it
+        params.put("interval", DEFAULT_INTERVAL.getTag());
+        
+        // This will instruct Yahoo to return splits
+        params.put("events", "split");
 
         params.put("crumb", CrumbManager.getCrumb());
 
@@ -136,22 +113,19 @@ public class HistQuotes2Request {
         for (String line = br.readLine(); line != null; line = br.readLine()) {
 
             log.info("Parsing CSV line: " + Utils.unescape(line));
-            HistoricalQuote quote = this.parseCSVLine(line);
-            result.add(quote);
+            HistoricalSplit split = this.parseCSVLine(line);
+            result.add(split);
         }
         return result;
     }
 
-    private HistoricalQuote parseCSVLine(String line) {
+    private HistoricalSplit parseCSVLine(String line) {
         String[] data = line.split(YahooFinance.QUOTES_CSV_DELIMITER);
-        return new HistoricalQuote(this.symbol,
+    	String[] parts = data[1].split("/");
+        return new HistoricalSplit(this.symbol,
                 Utils.parseHistDate(data[0]),
-                Utils.getBigDecimal(data[1]),
-                Utils.getBigDecimal(data[3]),
-                Utils.getBigDecimal(data[2]),
-                Utils.getBigDecimal(data[4]),
-                Utils.getBigDecimal(data[5]),
-                Utils.getLong(data[6])
+                Utils.getBigDecimal(parts[0]),
+                Utils.getBigDecimal(parts[1])
         );
     }
 

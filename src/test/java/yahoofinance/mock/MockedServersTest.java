@@ -2,13 +2,13 @@ package yahoofinance.mock;
 
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockWebServer;
-import org.junit.AfterClass;
-import org.junit.Before;
+
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import yahoofinance.YahooFinance;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -16,7 +16,7 @@ import java.util.logging.Logger;
  */
 public class MockedServersTest {
 
-    public static final Logger LOG = Logger.getLogger(MockedServersTest.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(MockedServersTest.class);
 
     private static boolean started = false;
 
@@ -35,7 +35,7 @@ public class MockedServersTest {
             quotesServer.start();
             histQuotesServer.start();
         } catch (IOException e) {
-            LOG.log(Level.SEVERE, "Unable to start mock web server", e);
+            log.error("Unable to start mock web server", e);
         }
         String quotesBaseUrl = "http://localhost:" + quotesServer.getPort() + "/d/quotes.csv";
         String histQuotesBaseUrl = "http://localhost:" + histQuotesServer.getPort() + "/table.csv";
@@ -43,6 +43,7 @@ public class MockedServersTest {
         System.setProperty("yahoofinance.baseurl.quotes", quotesBaseUrl);
         System.setProperty("yahoofinance.baseurl.histquotes", histQuotesBaseUrl);
         System.setProperty("yahoofinance.histquotes2.enabled", "false");
+        System.setProperty("yahoofinance.quotesquery1v7.enabled", "false");
 
         final Dispatcher dispatcher = new YahooFinanceDispatcher();
         quotesServer.setDispatcher(dispatcher);

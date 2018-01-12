@@ -3,6 +3,7 @@ package yahoofinance.quotes.stock;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.Calendar;
 
 import yahoofinance.Utils;
 
@@ -37,6 +38,8 @@ public class StockStats implements Serializable {
     private BigDecimal oneYearTargetPrice;
     
     private BigDecimal shortRatio;
+
+    private Calendar earningsAnnouncement;
     
     public StockStats(String symbol) {
         this.symbol = symbol;
@@ -185,10 +188,22 @@ public class StockStats implements Serializable {
     public void setShortRatio(BigDecimal shortRatio) {
         this.shortRatio = shortRatio;
     }
-    
+
+    public Calendar getEarningsAnnouncement() {
+        return earningsAnnouncement;
+    }
+
+    public void setEarningsAnnouncement(Calendar earningsAnnouncement) {
+        this.earningsAnnouncement = earningsAnnouncement;
+    }
+
     @Override
     public String toString() {
-        return "EPS: " + this.eps + ", PE: " + this.pe + ", PEG: " + this.peg;
+        String earningsStr = "/";
+        if(this.earningsAnnouncement != null) {
+            earningsStr = this.earningsAnnouncement.getTime().toString();
+        }
+        return "EPS: " + this.eps + ", PE: " + this.pe + ", Earnings announcement: " + earningsStr;
     }
     
 }
